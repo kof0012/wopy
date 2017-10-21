@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import InvalidElementStateException
 import re,json
 from scrapy.selector import Selector 
-
+from urllib import parse
 browser = webdriver.Firefox()
 wait = WebDriverWait(browser, 10)
 
@@ -48,12 +48,13 @@ def next_page(numbers):
 def get_products():
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#mainsrp-itemlist > div > div > div:nth-child(1) > div:nth-child(35)')))
     num=len(re.findall('<div class="item J_MouserOnverReq.*?data-index="(\d+)"',browser.page_source,re.S))
+    baseurl=browser.current_url
     html=Selector(text=browser.page_source)
     for i in range(int(num)+1):
         title=html.xpath('//div[@data-index="%d"]//a[contains(@class,"J_ClickStat")]//text()'%i).extract()
-        title=re.sub(r'[\n\t\s ]','',''.join(title))
+        title=re.sub(r'[\W]','',''.join(title))
         if title:
-            img=html.xpath('//div[@data-index="%d"]//img[@class="J_ItemPic img"]/@data-src'%i).extract_first()
+            img=parse.urljoin(browser.current_url,html.xpath('//div[@data-index="%d"]//img[@class="J_ItemPic img"]/@data-src'%i).extract_first())
             price=html.xpath('//div[@data-index="%d"]//strong/text()'%i).extract_first()
             print(i,title,img,price)
             content=dict(title=title,img=img,price=price)
