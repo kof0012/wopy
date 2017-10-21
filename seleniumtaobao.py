@@ -23,7 +23,6 @@ def search():
         total = wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, '#mainsrp-pager > div > div > div > div.total')))
         get_products()
-        #     write_to_json(content)
         return total.text
 
     except InvalidElementStateException:
@@ -41,7 +40,6 @@ def next_page(numbers):
         submit.click()
         wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR,'#mainsrp-pager > div > div > div > ul > li.item.active > span'),str(numbers)))
         get_products()
-        #     write_to_json(content)
 
     except InvalidElementStateException:
         print('不知道咋了')
