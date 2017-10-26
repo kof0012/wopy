@@ -1,4 +1,3 @@
-from six import itervalues
 import pymysql
 
 class SQL():
@@ -30,12 +29,12 @@ class SQL():
             if values:
                 _keys = ",".join(self.escape(k) for k in values)
                 _values = ",".join(['%s']*len(values))
-                sql_query = "insert into %s (%s) values (%s)" % (tablename,_keys,_values)
+                sql_query = "replace into %s (%s) values (%s)" % (tablename,_keys,_values)
             else:
                 sql_query = "replace into %s default values" % tablename
             try:
                 if values:
-                    self.cursor.execute(sql_query,list(itervalues(values)))
+                    self.cursor.execute(sql_query,list(values.values())
                 else:       
                     self.cursor.execute(sql_query)
                 self.conn.commit()
