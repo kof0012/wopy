@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+# Created on 2017-10-25 11:24:48
+# Project: lagou
+
+from pyspider.libs.base_handler import *
+import re
+from urllib import parse
+from pyspider.database.mysql.selfmysqldb import SQL
+import hashlib
+
+
+class Handler(BaseHandler):
+    global Cookie
+    Cookie={8 '%E': '1'}
+    
+    headers={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64; rv:56.0) Gecko/20100101 Firefox/56.0',
+            'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Connection':'keep-alive',
+             'Upgrade-Insecure-Requests':'1',
+             'cookie':'HkeD=https%3A%2F%2Fwww.lagou.com%2F'
+             
+            }
+    
+    crawl_config = {
+        "headers" : headers
+        
+        
+    }
+
+    @every(minutes=24 * 60)
+    def on_start(self):
+        self.crawl('https://www.lagou.com/', callback=self.index_page)
+        
+    def get_md5(self,url):
+        if isinstance(url,str):
+            url=url.encode('utf-8')
+            m=hashlib.md5()
+            m.update(url)
+            return m.hexdigest()
+
+    @config(age=10 * 24 * 60 * 60)
+    def index_page(self, response):
+        for each in re.findall(r'href="(.*?jobs/\d+.html)"',response.text):
+            self.crawl(each,callback=self.detail_page)
+
+    @config(priority=2)
+    def detail_page(self, response):
+        
+        salary=re.match(r'(\d+)k-?',response.doc('.salary').text())
+        if salary:
+            salary=int(salary.group(1))
+        experience=re.match(r'.*?(\d+)-',response.doc('.job_request span').text())
+        if experience:
+            experience=int(experience.group(1))
+        detail_inner_urls=(parse.urljoin(response.url,each) for each in re.findall(r'href="(.*?jobs/\d+.html)"',response.text))
+       
+        
+        for iner in detail_inner_urls:
+            self.crawl(iner,callback=self.detail_page)
+
+        return {
+            "url": response.url,
+            "uniq":self.get_md5(response.url),
+            "title": response.doc('.job-name > .name').text(),
+            "Minsalary":salary,
+            "experience":experience,
+            "workplace":response.doc('.work_addr > a').text().strip().replace("查看地图",''),
+            "company":response.doc('.company').text(),
+            "financstage":response.doc('#job_company > dd > ul > li:nth-child(2)').text().replace("发展阶段",''),
+            
+        }
+    
+    
+    def on_result(self,result):
+        if not result or not result['title']:
+            return
+        sql = SQL()
+        sql.insert('lagou',**result)
