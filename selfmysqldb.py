@@ -34,7 +34,7 @@ class SQL():
                 sql_query = "replace into %s default values" % tablename
             try:
                 if values:
-                    self.cursor.execute(sql_query,list(values.values())
+                    self.cursor.execute(sql_query,list(values.values()))
                 else:       
                     self.cursor.execute(sql_query)
                 self.conn.commit()
