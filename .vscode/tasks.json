@@ -8,7 +8,7 @@
             "type": "shell",
             "command": "python3",
             "args": [
-            "${file}"    
+                "${file}"
             ],
             "group": {
                 "kind": "build",
