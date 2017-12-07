@@ -55,16 +55,21 @@ class Handler(BaseHandler):
 
     @config(age=10 * 24 * 60 * 60)
     def index_page(self, response):
-          rj=response.json
-          for i in rj.get('data', None):
-            if i.get('is_feed_ad') == False:
-                result= {'title': i.get('title'), 'tags': i.get('chinese_tag'), 'comments': i.get('comments_count'),'url': 'https://www.toutiao.com'+i.get('source_url')}
-                print(result)
-                self.sql.insert('toutiaocomment', **result)
-          
-          if rj.get('next'):
+        rj=response.json
+        if rj.get('next'):
             maxtime = rj.get('next').get('max_behot_time')
             AS, CP = self.getASCP()
             payloads = {'max_behot_time': maxtime, 'category': '__all__','utm_source': 'toutiao', 'widen': 1, 'tadrequire': 'false', 'as': AS, 'cp': CP}
             self.crawl(self.feed_url, params=payloads,callback=self.index_page)
-            
+        
+        
+        results= [{'title': i.get('title'), 'tags': i.get('chinese_tag'), 'comments': i.get('comments_count'),'url': 'https://www.toutiao.com'+i.get('source_url')} for i in rj.get('data', None) if i.get('is_feed_ad') == False]
+        print(results)
+        return results
+        
+
+    def on_result(self,result):
+        if not result :
+            return
+        for res in result:
+            self.sql.insert('toutiaocomment',**res)
